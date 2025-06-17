@@ -7,6 +7,7 @@ name = "discreet"
 version = "0.1.0"
 dependencies = [
  "discreet-common 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "discreet-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -22,6 +23,17 @@ checksum = "faf2b447f3e54d6755779366fdf8e7bf5f79ba7f19c6e2f81e418d6a4165b93d"
 [[package]]
 name = "discreet-macros"
 version = "0.1.0"
+dependencies = [
+ "discreet-common 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "discreet-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "776b20723e5dd5e402f7c5c0499b051dbaea2808fc45eda139454e5d8529a004"
 dependencies = [
  "discreet-common 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote",
@@ -63,7 +75,7 @@ version = "0.1.0"
 dependencies = [
  "discreet",
  "discreet-common 0.1.0",
- "discreet-macros",
+ "discreet-macros 0.1.0",
 ]
 
 [[package]]

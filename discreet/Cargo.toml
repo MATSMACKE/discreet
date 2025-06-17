@@ -9,3 +9,4 @@ repository = "https://github.com/MATSMACKE/discreet"
 
 [dependencies]
 discreet-common = "0.1.0"
+discreet-macros = "0.1.0"
