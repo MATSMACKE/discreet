@@ -1,23 +1,16 @@
-pub struct Derivative<Expr: Expression, Variable: self::Variable> {
-    _e: std::marker::PhantomData<Expr>,
-    _v: std::marker::PhantomData<Variable>,
+pub struct Derivative<E: Expression, V: Variable> {
+    _e: std::marker::PhantomData<E>,
+    _v: std::marker::PhantomData<V>,
 }
-impl<E: Expression, V: Variable> Expression for Derivative<E, V> {
-    fn eval() -> Expr {
-        Expr::Derivative {
-            expr: Box::new(E::eval()),
-            var: V::get_name(),
-        }
-    }
-}
+impl<E: Expression, V: Variable> Expression for Derivative<E, V> {}
 
-enum Expr {
-    Derivative { expr: Box<Self>, var: String },
+pub struct Mul<Lhs: Expression, Rhs: Expression> {
+    _l: std::marker::PhantomData<Lhs>,
+    _r: std::marker::PhantomData<Rhs>,
 }
+impl<Lhs: Expression, V: Expression> Expression for Mul<Lhs, V> {}
 
-trait Expression {
-    fn eval() -> Expr;
-}
+pub trait Expression {}
 
 pub trait Variable {
     fn get_name() -> String;

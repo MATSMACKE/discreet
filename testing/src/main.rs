@@ -1,5 +1,5 @@
-use discreet_common::Variable;
-use discreet_macros::variable;
+use discreet_common::{Node1D, Variable};
+use discreet_macros::{finite_diff_1d, variable};
 
 fn main() {
     println!("The variable is called {}", X::get_name());
@@ -7,7 +7,17 @@ fn main() {
 
 variable!(X);
 
-// #[discreet::finite_diff_2d::stencil]
-// struct SimpleUpwind {
-//     target: Node2D<1, 1>,
-// }
+// #[finite_diff_1d]
+// enum Test {}
+
+#[finite_diff_1d{
+    boundary_left: "Dirichlet",
+}]
+struct test {
+    target: Node1D<1>,
+    center: Node1D<0>,
+    upwind: Node1D<-1>,
+}
+
+#[finite_diff_1d]
+struct Fails();

@@ -3,7 +3,13 @@ pub mod diff_eq;
 pub use diff_eq::{Derivative, Variable};
 
 /// A node in a 2-dimensional finite difference method. This corresponds to the term u[i+I, j+J].
-pub struct Node2D<const I: usize, const J: usize> {
+pub struct Node2D<const I: isize, const J: isize> {
+    /// The value of this node when evaluating the finite difference operator on the stencil
+    value: f64,
+}
+
+/// A node in a 1-dimensional finite difference method. This corresponds to the term u[i+I].
+pub struct Node1D<const I: isize> {
     /// The value of this node when evaluating the finite difference operator on the stencil
     value: f64,
 }
