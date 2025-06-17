@@ -1,4 +1,4 @@
-use discreet_macros::{finite_diff_1d};
+use discreet_macros::finite_diff_1d;
 
 fn main() {
     println!("Hello World");
@@ -7,8 +7,8 @@ fn main() {
 // #[finite_diff_1d]
 // enum Test {}
 
-finite_diff_1d!{
+finite_diff_1d! {
     id1: "Hello",
-    id2: 1 + 2, 
+    id2,
     akcnl: 871023
 }
