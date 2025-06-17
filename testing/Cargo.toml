@@ -1,0 +1,9 @@
+[package]
+name = "testing"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+discreet = { path = '../discreet' }
+discreet-common = { path = '../discreet-common' }
+discreet-macros = { path = '../discreet-macros' }

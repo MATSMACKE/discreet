@@ -1,0 +1,18 @@
+[package]
+name = "discreet-macros"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Macros for the discreet package"
+homepage = "https://github.com/MATSMACKE/discreet"
+repository = "https://github.com/MATSMACKE/discreet"
+
+[lib]
+name = "discreet_macros"
+path = "src/lib.rs"
+proc-macro = true
+
+[dependencies]
+discreet-common = "0.1.0"
+quote = "1.0.40"
+syn = { version = "2.0.103", features = ['full'] }

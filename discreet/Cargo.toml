@@ -1,0 +1,11 @@
+[package]
+name = "discreet"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Generate numerical codes from definitions of PDEs and discretisations in the type system."
+homepage = "https://github.com/MATSMACKE/discreet"
+repository = "https://github.com/MATSMACKE/discreet"
+
+[dependencies]
+discreet-common = "0.1.0"

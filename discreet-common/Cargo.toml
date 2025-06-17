@@ -1,0 +1,10 @@
+[package]
+name = "discreet-common"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Code shared between the discreet and discreet-macros packages."
+homepage = "https://github.com/MATSMACKE/discreet"
+repository = "https://github.com/MATSMACKE/discreet"
+
+[dependencies]
