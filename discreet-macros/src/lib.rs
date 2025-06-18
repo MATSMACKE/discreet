@@ -8,9 +8,6 @@ use quote::quote;
 use syn::parse_macro_input;
 
 mod args;
-mod cas;
-mod finite_diff;
-mod taylor;
 
 use args::CommaSeparatedArgs;
 
