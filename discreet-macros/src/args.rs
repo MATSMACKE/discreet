@@ -1,5 +1,5 @@
 use syn::{
-    Expr, Ident, LitBool, Token,
+    Expr, Ident, Token,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
 };

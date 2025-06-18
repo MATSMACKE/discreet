@@ -8,75 +8,58 @@ use quote::quote;
 use syn::parse_macro_input;
 
 mod args;
+mod cas;
+mod finite_diff;
+mod taylor;
 
 use args::CommaSeparatedArgs;
 
-
-/// Generates a struct implementing the finite difference method in 1D.
+/// Generates a struct implementing the finite difference method in 2D.
+/// The name of this struct is `FiniteDiff`.
+/// The code can be used by calling `FiniteDiff::compute(&mut mesh)`, where `mesh` is a `FiniteDiffMesh1D`.
+///
+/// # Arguments:
+/// `dimensions`: The variables assigned to each dimension. For example, if solving a problem in 1 spatial
+/// dimension and time, this might be `dimensions: (x, t)`.
+///
+/// `constants`: Any constants used in the differential equation. This will be turned into `struct Constants`,
+/// which will be a parameter to `FiniteDiff::new`. Example (linear diffusion equation): `constants: [nu]`.
+///
+/// `equation`: The equation to solve. This should be in the form `L(u) = 0`, where L is a finite difference
+/// operator. Example (linear diffusion): `equation: du/dt - nu * d2u/dx2 = 0`.
+///
+/// `stencil`: The nodes to be used for calculating the next unknown. Coordinates are relative to the center
+/// of the Taylor expansions. Example (explicit in time, central difference in space):
+/// `stencil: [(-1, 0), (0, 0), (1, 0)]`
+///
+/// `unknown`: The node for which the value is calculated. This is also relative to the node used as the center
+/// of the Taylor expansions. Example (same example as for stencil): `unknown: (0, 1)`.
 #[proc_macro]
-pub fn finite_diff_1d(args: TokenStream) -> TokenStream {
+pub fn finite_diff_2d(args: TokenStream) -> TokenStream {
     let parsed = parse_macro_input!(args as CommaSeparatedArgs);
 
     parsed.print_all();
 
-    // let item = syn::parse_macro_input!(input_item as syn::Item);
+    let mut vars = quote!(pub nu: f64,);
 
-    // let syn::Item::Struct(s) = item else {
-    //     return syn::Error::new(
-    //         item.span(),
-    //         "`finite_diff_1d` can only be used on a `struct`. ",
-    //     )
-    //     .to_compile_error()
-    //     .into();
-    // };
-
-    // let syn::Fields::Named(fields) = s.fields else {
-    //     return syn::Error::new(
-    //         s.fields.span(),
-    //         "`finite_diff_1d` expects the `struct` it is used on to have named fields. ",
-    //     )
-    //     .to_compile_error()
-    //     .into();
-    // };
-
-    // for field in fields.named.into_iter() {
-    //     let ident = field.ident;
-    //     let syn::Type::Path(path) = field.ty else {
-    //         return syn::Error::new(
-    //             field.ty.span(),
-    //             "This type doesn't look like a type `finite_diff_1d` is expecting. ",
-    //         )
-    //         .to_compile_error()
-    //         .into();
-    //     };
-
-    //     eprintln!("{:#?}", path);
-    // }
+    vars = quote!(#vars pub bla: f64,);
 
     quote!(
-        
-    )
-    .into()
-}
+        struct FiniteDiff {
+            consts: Constants
+        }
 
-/// Generates a struct implementing the finite difference method described by the struct
-/// the macro is applied to.
-#[proc_macro_attribute]
-pub fn finite_diff_2d(args: TokenStream, input_item: TokenStream) -> TokenStream {
-    eprintln!("ARGS: {}", args);
+        impl FiniteDiff {
+            fn new(consts: Constants) -> Self {
+                Self {
+                    consts
+                }
+            }
+        }
 
-    let item = syn::parse_macro_input!(input_item as syn::Item);
-
-    let syn::Item::Struct(s) = item else { panic!() };
-
-    let syn::Fields::Named(fields) = s.fields else {
-        panic!()
-    };
-
-    eprintln!("FIELDS: {:?}", fields);
-
-    quote!(
-        struct T;
+        struct Constants {
+            #vars
+        }
     )
     .into()
 }
