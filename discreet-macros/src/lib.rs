@@ -3,6 +3,8 @@
 // /// other strategy markers.
 // #[proc_macro_attribute]
 // pub fn stencil2d() {}
+
+#![allow(unused)]
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse_macro_input;
@@ -11,6 +13,8 @@ mod args;
 mod diff_eq;
 
 use args::CommaSeparatedArgs;
+
+use crate::diff_eq::parse_pde;
 
 /// Generates a struct implementing the finite difference method in 2D.
 /// The name of this struct is `FiniteDiff`.
@@ -35,7 +39,15 @@ use args::CommaSeparatedArgs;
 pub fn finite_diff_2d(args: TokenStream) -> TokenStream {
     let parsed = parse_macro_input!(args as CommaSeparatedArgs);
 
-    parsed.print_all();
+    // parsed.print_all();
+    let expr = parsed.find_arg("equation".to_string()).unwrap();
+
+    eprintln!("{expr:#?}");
+
+    let eqn = match parse_pde(expr) {
+        Ok(e) => e,
+        Err(e) => return e.to_compile_error().into(),
+    };
 
     let mut vars = quote!(pub nu: f64,);
 

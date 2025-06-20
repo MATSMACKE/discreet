@@ -22,18 +22,23 @@ impl FiniteDiff2DBuilder {
         Self::default()
     }
 
-    pub fn dimensions(&mut self, dimensions: Vec<Ident>) -> &mut Self {
+    pub fn dimensions(mut self, dimensions: Vec<Ident>) -> Self {
         self.dimensions = Some(dimensions);
         self
     }
 
-    pub fn constants(&mut self, constants: Vec<Ident>) -> &mut Self {
+    pub fn constants(mut self, constants: Vec<Ident>) -> Self {
         self.constants = Some(constants);
         self
     }
 
-    pub fn equation(&mut self, equation: Expression) -> &mut Self {
+    pub fn equation(mut self, equation: Expression) -> Self {
         self.equation = Some(equation);
+        self
+    }
+
+    pub fn stencil(mut self, stencil: Stencil) -> Self {
+        self.stencil = Some(stencil);
         self
     }
 

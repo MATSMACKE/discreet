@@ -16,16 +16,27 @@ impl CommaSeparatedArgs {
     }
 }
 
+impl CommaSeparatedArgs {
+    pub fn find_arg(&self, ident: String) -> Option<Expr> {
+        for item in &self.items {
+            if item.ident.to_string() == ident {
+                return Some(item.value.clone());
+            }
+        }
+        None
+    }
+}
+
 impl Parse for CommaSeparatedArgs {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let parsed: Punctuated<_, Token![,]> = Punctuated::parse_terminated(&input)?;
+        let parsed: Punctuated<_, Token![,]> = Punctuated::parse_terminated(input)?;
         Ok(Self {
             items: parsed.into_iter().collect(),
         })
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Arg {
     ident: Ident,
     value: Expr,
