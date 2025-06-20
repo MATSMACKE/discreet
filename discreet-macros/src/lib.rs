@@ -8,6 +8,7 @@ use quote::quote;
 use syn::parse_macro_input;
 
 mod args;
+mod diff_eq;
 
 use args::CommaSeparatedArgs;
 
@@ -29,8 +30,7 @@ use args::CommaSeparatedArgs;
 /// of the Taylor expansions. Example (explicit in time, central difference in space):
 /// `stencil: [(-1, 0), (0, 0), (1, 0)]`
 ///
-/// `unknown`: The node for which the value is calculated. This is also relative to the node used as the center
-/// of the Taylor expansions. Example (same example as for stencil): `unknown: (0, 1)`.
+/// `number_format`: The number type that will be used for calculations. Example: `number_format: f64`.
 #[proc_macro]
 pub fn finite_diff_2d(args: TokenStream) -> TokenStream {
     let parsed = parse_macro_input!(args as CommaSeparatedArgs);

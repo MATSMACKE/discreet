@@ -11,7 +11,7 @@ pub struct CommaSeparatedArgs {
 impl CommaSeparatedArgs {
     pub fn print_all(&self) {
         for item in &self.items {
-            eprintln!("ARG: {:?}", item)
+            eprintln!("ARG: {:#?}", item)
         }
     }
 }
