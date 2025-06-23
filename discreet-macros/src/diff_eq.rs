@@ -1,7 +1,7 @@
 use discreet_common::algebra::Expression;
 use syn::{
-    Expr, ExprAssign, ExprBinary, ExprCall, ExprLit, ExprParen, ExprPath, ExprUnary, Lit, LitInt,
-    spanned::Spanned,
+    BinOp, Expr, ExprAssign, ExprBinary, ExprCall, ExprLit, ExprParen, ExprPath, ExprUnary, Lit,
+    LitInt, spanned::Spanned,
 };
 
 pub fn parse_pde(expr: Expr) -> syn::Result<Expression> {
@@ -33,7 +33,10 @@ fn parse_pde_expr(expr: Expr) -> syn::Result<Expression> {
     match expr {
         Expr::Binary(expr) => parse_binop(expr),
         Expr::Unary(expr) => parse_unary(expr),
-        Expr::Call(expr) => parse_fn_call(expr),
+        Expr::Call(expr) => Err(syn::Error::new(
+            expr.span(),
+            "The PDE should not contain any function calls. If you need to use a function that isn't the function you're solving for, you should simply use the function's identifier. ",
+        )),
         Expr::Lit(expr) => parse_literal(expr),
         Expr::Paren(expr) => parse_parenthesized(expr),
         Expr::Path(expr) => parse_path(expr),
@@ -47,15 +50,61 @@ fn parse_pde_expr(expr: Expr) -> syn::Result<Expression> {
 fn parse_binop(expr: ExprBinary) -> syn::Result<Expression> {
     let left = parse_pde_expr(*expr.left)?;
     let right = parse_pde_expr(*expr.right)?;
-    Ok(Expression::Constant(42.0))
+
+    match expr.op {
+        BinOp::Add(_) => {
+            let mut sum = Vec::new();
+            match left {
+                Expression::Sum(terms) => {
+                    sum.extend(terms);
+                }
+                other => {
+                    sum.push(other);
+                }
+            }
+            match right {
+                Expression::Sum(terms) => {
+                    sum.extend(terms);
+                }
+                other => {
+                    sum.push(other);
+                }
+            }
+            Ok(Expression::Sum(sum))
+        }
+        BinOp::Sub(_) => {
+            let mut sum = Vec::new();
+            match left {
+                Expression::Sum(terms) => {
+                    sum.extend(terms);
+                }
+                other => {
+                    sum.push(other);
+                }
+            }
+            match right {
+                Expression::Sum(mut terms) => {
+                    let terms = terms
+                        .into_iter()
+                        .map(|exp| Expression::Negate(Box::new(exp)));
+                    sum.extend(terms);
+                }
+                other => {
+                    sum.push(Expression::Negate(Box::new(other)));
+                }
+            }
+            Ok(Expression::Sum(sum))
+        }
+        BinOp::Mul(_) => Ok(Expression::Constant(42.0)),
+        BinOp::Div(_) => Ok(Expression::Constant(42.0)),
+        // We treat `^` as exponentiation
+        BinOp::BitXor(_) => Ok(Expression::Constant(42.0)),
+        x => Err(syn::Error::new(x.span(), "Unexpected operator in PDE")),
+    }
 }
 
 fn parse_unary(expr: ExprUnary) -> syn::Result<Expression> {
     let operand = parse_pde_expr(*expr.expr)?;
-    Ok(Expression::Constant(42.0))
-}
-
-fn parse_fn_call(expr: ExprCall) -> syn::Result<Expression> {
     Ok(Expression::Constant(42.0))
 }
 
@@ -64,10 +113,10 @@ fn parse_literal(expr: ExprLit) -> syn::Result<Expression> {
 }
 
 fn parse_parenthesized(expr: ExprParen) -> syn::Result<Expression> {
-    let expr = parse_pde_expr(*expr.expr)?;
-    Ok(Expression::Constant(42.0))
+    parse_pde_expr(*expr.expr)
 }
 
+/// This corresponds to identifiers.
 fn parse_path(expr: ExprPath) -> syn::Result<Expression> {
     Ok(Expression::Constant(42.0))
 }

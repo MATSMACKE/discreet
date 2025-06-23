@@ -1,9 +1,3 @@
-// /// This macro implements the FiniteDifferenceStencil2D trait for a struct. This struct should
-// /// contain only instances of Node2D, the differential equation, boundary conditions, and any
-// /// other strategy markers.
-// #[proc_macro_attribute]
-// pub fn stencil2d() {}
-
 #![allow(unused)]
 use proc_macro::TokenStream;
 use quote::quote;
@@ -27,6 +21,13 @@ use crate::diff_eq::parse_pde;
 /// `constants`: Any constants used in the differential equation. This will be turned into `struct Constants`,
 /// which will be a parameter to `FiniteDiff::new`. Example (linear diffusion equation): `constants: [nu]`.
 ///
+/// `functions`: Functions used in the PDE that aren't the PDE being solved for. For example, if you want to
+/// solve `du/dx + du/dy - f(x, y) = 0`, you would use `functions: [f]`, and `equation: du/dx + du/dy - f = 0`.
+/// The given functions will be used to generate a `struct FunctionValueMesh`, which represents the function
+/// values at each point in the computational domain. This can be filled in at runtime before running the
+/// finite difference scheme by using the new function of `FunctionValueMesh` with closures corresponding
+/// to the functions (in the physical domain).
+///
 /// `equation`: The equation to solve. This should be in the form `L(u) = 0`, where L is a finite difference
 /// operator. Example (linear diffusion): `equation: du/dt - nu * d2u/dx2 = 0`.
 ///
@@ -49,9 +50,16 @@ pub fn finite_diff_2d(args: TokenStream) -> TokenStream {
         Err(e) => return e.to_compile_error().into(),
     };
 
+    // ===========
+    // THIS IS JUST A PLACEHOLDER UNTIL PROPERLY IMPLEMENTED
     let mut vars = quote!(pub nu: f64,);
-
     vars = quote!(#vars pub bla: f64,);
+
+    // for one function
+    let values_type = quote!((f64));
+    let functions = quote!(sinxcosy: F);
+
+    // ==========
 
     quote!(
         struct FiniteDiff {
@@ -59,7 +67,7 @@ pub fn finite_diff_2d(args: TokenStream) -> TokenStream {
         }
 
         impl FiniteDiff {
-            fn new(consts: Constants) -> Self {
+            fn new(consts: Constants, fns: FunctionValueMesh) -> Self {
                 Self {
                     consts
                 }
@@ -68,6 +76,16 @@ pub fn finite_diff_2d(args: TokenStream) -> TokenStream {
 
         struct Constants {
             #vars
+        }
+
+        struct FunctionValueMesh {
+            values: Vec<#values_type>
+        }
+
+        impl FunctionValueMesh {
+            fn new<F: Fn(f64, f64) -> f64>(mesh: &FiniteDiffMesh1D, #functions) -> Self {
+                todo!()
+            }
         }
     )
     .into()

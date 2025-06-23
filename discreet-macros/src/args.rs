@@ -19,7 +19,7 @@ impl CommaSeparatedArgs {
 impl CommaSeparatedArgs {
     pub fn find_arg(&self, ident: String) -> Option<Expr> {
         for item in &self.items {
-            if item.ident.to_string() == ident {
+            if item.ident == ident {
                 return Some(item.value.clone());
             }
         }

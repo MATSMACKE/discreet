@@ -7,6 +7,7 @@ pub enum Expression {
     Sum(Vec<Expression>),
     Constant(f64),
     Derivative(Box<Expression>, Vec<Variable>),
+    Negate(Box<Expression>),
 }
 
 impl Expression {
@@ -23,6 +24,7 @@ impl Expression {
             Self::Sum(vec) => Self::Sum(vec.into_iter().map(func).collect()),
             Self::Constant(_) => self,
             Self::Derivative(e, v) => Self::Derivative(Box::new(func(*e)), v),
+            Self::Negate(e) => Self::Negate(Box::new(func(*e))),
         }
     }
 }
