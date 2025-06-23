@@ -89,7 +89,7 @@ pub enum DiscretisedExpression {
 
 /// Stores finite difference operators for
 pub struct DerivativeApproximations {
-    operators: BTreeMap<Vec<usize>, FiniteDiffOperator>,
+    operators: BTreeMap<(usize, usize), FiniteDiffOperator>,
 }
 
 /// Represents a finite difference approximation of a derivative.
@@ -119,4 +119,9 @@ pub struct NodeRange {
 pub enum Explicitness {
     Explicit,
     Implicit,
+}
+
+pub enum Dimension2D {
+    First,
+    Second,
 }
