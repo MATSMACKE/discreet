@@ -95,8 +95,49 @@ fn parse_binop(expr: ExprBinary) -> syn::Result<Expression> {
             }
             Ok(Expression::Sum(sum))
         }
-        BinOp::Mul(_) => Ok(Expression::Constant(42.0)),
-        BinOp::Div(_) => Ok(Expression::Constant(42.0)),
+        BinOp::Mul(_) => {
+            let mut prod = Vec::new();
+            match left {
+                Expression::Prod(terms) => {
+                    prod.extend(terms);
+                }
+                other => {
+                    prod.push(other);
+                }
+            }
+            match right {
+                Expression::Prod(terms) => {
+                    prod.extend(terms);
+                }
+                other => {
+                    prod.push(other);
+                }
+            }
+            Ok(Expression::Prod(prod))
+        }
+        BinOp::Div(_) => {
+            let mut prod = Vec::new();
+            match left {
+                Expression::Prod(terms) => {
+                    prod.extend(terms);
+                }
+                other => {
+                    prod.push(other);
+                }
+            }
+            match right {
+                Expression::Prod(mut terms) => {
+                    let terms = terms
+                        .into_iter()
+                        .map(|exp| Expression::Reciprocal(Box::new(exp)));
+                    prod.extend(terms);
+                }
+                other => {
+                    prod.push(Expression::Reciprocal(Box::new(other)));
+                }
+            }
+            Ok(Expression::Sum(prod))
+        }
         // We treat `^` as exponentiation
         BinOp::BitXor(_) => Ok(Expression::Constant(42.0)),
         x => Err(syn::Error::new(x.span(), "Unexpected operator in PDE")),

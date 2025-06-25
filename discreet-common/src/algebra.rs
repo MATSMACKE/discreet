@@ -3,11 +3,12 @@ pub struct Variable;
 
 #[derive(Debug, PartialEq)]
 pub enum Expression {
-    ConstMul(f64, Box<Expression>),
+    Prod(Vec<Expression>),
     Sum(Vec<Expression>),
     Constant(f64),
     Derivative(Box<Expression>, Vec<Variable>),
     Negate(Box<Expression>),
+    Reciprocal(Box<Expression>),
 }
 
 impl Expression {
@@ -20,11 +21,12 @@ impl Expression {
 
     pub fn replace_children<F: Fn(Self) -> Self>(self, func: F) -> Self {
         match self {
-            Self::ConstMul(v, e) => Self::ConstMul(v, Box::new(func(*e))),
+            Self::Prod(vec) => Self::Prod(vec.into_iter().map(func).collect()),
             Self::Sum(vec) => Self::Sum(vec.into_iter().map(func).collect()),
             Self::Constant(_) => self,
             Self::Derivative(e, v) => Self::Derivative(Box::new(func(*e)), v),
             Self::Negate(e) => Self::Negate(Box::new(func(*e))),
+            Self::Reciprocal(e) => Self::Reciprocal(Box::new(func(*e))),
         }
     }
 }
@@ -44,13 +46,10 @@ mod test {
             _ => None,
         };
 
-        let expr = Expression::ConstMul(
-            0.54,
-            Box::new(Expression::Derivative(
-                Box::new(Expression::Constant(1.0)),
-                vec![],
-            )),
-        );
+        let expr = Expression::Prod(vec![
+            Expression::Constant(0.54),
+            Expression::Derivative(Box::new(Expression::Constant(1.0)), vec![]),
+        ]);
 
         eprintln!("{expr:?}");
 
@@ -60,7 +59,7 @@ mod test {
 
         assert_eq!(
             e,
-            Expression::ConstMul(0.54, Box::new(Expression::Constant(42.0)),)
+            Expression::Prod(vec![Expression::Constant(0.54), Expression::Constant(42.0)])
         );
     }
 }
