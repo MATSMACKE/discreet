@@ -1,4 +1,4 @@
-use discreet_common::algebra::Expression;
+use discreet_common::algebra::{Expression, Variable};
 use syn::{
     BinOp, Expr, ExprAssign, ExprBinary, ExprCall, ExprLit, ExprParen, ExprPath, ExprUnary, Lit,
     LitInt, spanned::Spanned,
@@ -150,7 +150,13 @@ fn parse_unary(expr: ExprUnary) -> syn::Result<Expression> {
 }
 
 fn parse_literal(expr: ExprLit) -> syn::Result<Expression> {
-    Ok(Expression::Constant(42.0))
+    match expr.lit {
+        Lit::Float(v) => Ok(Expression::Constant(v.base10_parse()?)),
+        _ => Err(syn::Error::new(
+            expr.span(),
+            "Only floating point literals are allowed here.",
+        )),
+    }
 }
 
 fn parse_parenthesized(expr: ExprParen) -> syn::Result<Expression> {
@@ -159,5 +165,68 @@ fn parse_parenthesized(expr: ExprParen) -> syn::Result<Expression> {
 
 /// This corresponds to identifiers.
 fn parse_path(expr: ExprPath) -> syn::Result<Expression> {
-    Ok(Expression::Constant(42.0))
+    let span = expr.span();
+    if expr.path.segments.len() != 1 {
+        return Err(syn::Error::new(
+            span,
+            "Expected only identifiers without a path.",
+        ));
+    }
+
+    let id = expr.path.segments.into_iter().next().unwrap().ident;
+
+    let string = format!("{id}");
+
+    if string.starts_with("u_") {
+        let vars_string = string.split('_').nth(1).unwrap();
+
+        let mut vars = Vec::with_capacity(vars_string.len());
+        for c in vars_string.chars() {
+            match Variable::from_char(c) {
+                Some(v) => {
+                    vars.push(v);
+                }
+                None => {
+                    return Err(syn::Error::new(
+                        span,
+                        "Differentiation with respect to unknown variable. Should be x, y, z.",
+                    ));
+                }
+            }
+        }
+
+        if vars.iter().all(|v| *v == vars[0]) {
+            Ok(Expression::Derivative(vars[0], vars.len()))
+        } else {
+            Ok(Expression::CrossDerivative(vars))
+        }
+    } else if string == "u" {
+        Ok(Expression::SolutionVal)
+    } else {
+        Ok(Expression::SymbolicConstant(string))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use discreet_common::algebra::Expression;
+    use quote::quote;
+    use syn::Expr;
+
+    use crate::diff_eq::parse_pde;
+
+    #[test]
+    fn example1() {
+        let stream = quote! {du/dt - nu * d2u/dx2 - 2 * u = 0};
+        let expr: Expr = syn::parse2(stream).unwrap();
+
+        match parse_pde(expr) {
+            Ok(e) => {
+                assert_eq!(e, Expression::Constant(42.0))
+            }
+            Err(e) => {
+                panic!()
+            }
+        }
+    }
 }

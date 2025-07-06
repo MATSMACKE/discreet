@@ -15,21 +15,18 @@ use crate::diff_eq::parse_pde;
 /// The code can be used by calling `FiniteDiff::compute(&mut mesh)`, where `mesh` is a `FiniteDiffMesh1D`.
 ///
 /// # Arguments:
-/// `dimensions`: The variables assigned to each dimension. For example, if solving a problem in 1 spatial
-/// dimension and time, this might be `dimensions: (x, t)`.
-///
 /// `constants`: Any constants used in the differential equation. This will be turned into `struct Constants`,
 /// which will be a parameter to `FiniteDiff::new`. Example (linear diffusion equation): `constants: [nu]`.
 ///
 /// `functions`: Functions used in the PDE that aren't the PDE being solved for. For example, if you want to
-/// solve `du/dx + du/dy - f(x, y) = 0`, you would use `functions: [f]`, and `equation: du/dx + du/dy - f = 0`.
+/// solve `u_x + u_y - f(x, y) = 0`, you would use `functions: [f]`, and `equation: u_x + u_y - f = 0`.
 /// The given functions will be used to generate a `struct FunctionValueMesh`, which represents the function
 /// values at each point in the computational domain. This can be filled in at runtime before running the
 /// finite difference scheme by using the new function of `FunctionValueMesh` with closures corresponding
 /// to the functions (in the physical domain).
 ///
 /// `equation`: The equation to solve. This should be in the form `L(u) = 0`, where L is a finite difference
-/// operator. Example (linear diffusion): `equation: du/dt - nu * d2u/dx2 = 0`.
+/// operator. Example (linear diffusion): `equation: u_y - nu * u_xx = 0`.
 ///
 /// `stencil`: The nodes to be used for calculating the next unknown. Coordinates are relative to the center
 /// of the Taylor expansions. Example (explicit in time, central difference in space):
@@ -43,12 +40,14 @@ pub fn finite_diff_2d(args: TokenStream) -> TokenStream {
     // parsed.print_all();
     let expr = parsed.find_arg("equation".to_string()).unwrap();
 
-    eprintln!("{expr:#?}");
+    // eprintln!("{expr:#?}");
 
     let eqn = match parse_pde(expr) {
         Ok(e) => e,
         Err(e) => return e.to_compile_error().into(),
     };
+
+    println!("{eqn:#?}");
 
     // ===========
     // THIS IS JUST A PLACEHOLDER UNTIL PROPERLY IMPLEMENTED
@@ -67,7 +66,7 @@ pub fn finite_diff_2d(args: TokenStream) -> TokenStream {
         }
 
         impl FiniteDiff {
-            fn new(consts: Constants, fns: FunctionValueMesh) -> Self {
+            fn new(consts: Constants, mesh: FiniteDiffMesh, fns: FunctionValueMesh) -> Self {
                 Self {
                     consts
                 }
@@ -83,7 +82,7 @@ pub fn finite_diff_2d(args: TokenStream) -> TokenStream {
         }
 
         impl FunctionValueMesh {
-            fn new<F: Fn(f64, f64) -> f64>(mesh: &FiniteDiffMesh1D, #functions) -> Self {
+            fn new<F: Fn(f64, f64) -> f64>(mesh: &FiniteDiffMesh, #functions) -> Self {
                 todo!()
             }
         }
