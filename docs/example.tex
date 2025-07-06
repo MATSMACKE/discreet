@@ -1,0 +1,68 @@
+\documentclass[a4paper]{article}
+
+\usepackage{tikz}
+\usepackage{amsmath}
+
+\begin{document}
+
+\newcommand{\diff}[2]{\frac{\partial#1}{\partial#2}}
+
+\section{Example working (as a guideline of code/documentation to generate)}
+
+\subsection{Problem definition}
+
+Coordinates: $(x, t)$, so solution function is $u(x, t)$
+
+$$ \frac{\partial u}{\partial t} + c \frac{\partial u}{\partial x} = 0 $$
+
+Dirichlet on left boundary: 
+$$u(0, t) = 0$$
+
+Dirichlet on bottom boundary: 
+$$u(x, 0) = e^{-(x-3)^2}$$
+
+Domain: $x \in [0, 6]$, $t \in [0, 3]$
+
+
+\subsection{Solution method}
+
+\subsubsection{Stencil}
+Use stencil with values: $u_{i-1, \,j}$ and $u_{i, \,j-1}$ with Taylor series expanded about $u_{i, \,j}$. The unknown in the stencil is $u_{i, \,j}$.
+
+\subsubsection{Approximations}
+
+Method will be used on the computational domain, with coordinates (p, q), where nodes are spaced by 1 in each direction.
+$$\frac{\partial u}{\partial p} = u_{i, \,j} - u_{i-1, \,j}$$
+$$\frac{\partial u}{\partial q} = u_{i, \,j} - u_{i, \,j-1}$$
+
+On a simple grid physical domain with computational domain axes being linearly scaled x and t axes:
+$$\frac{\partial u}{\partial x} = \frac{1}{\Delta x} \frac{\partial u}{\partial p}$$
+$$\frac{\partial u}{\partial t} = \frac{1}{\Delta t} \frac{\partial u}{\partial q}$$
+
+Of course, $\frac{1}{\Delta x}$ and $\frac{1}{\Delta t}$ would be computed once and reused.
+
+On a more complex physical domain with a coordinate transform applied:
+$$ \frac{\partial u}{\partial x} = \frac{\partial u}{\partial p}\frac{\partial p}{\partial x} + \frac{\partial u}{\partial q}\frac{\partial q}{\partial x} $$
+$$\frac{\partial u}{\partial t} = \frac{\partial u}{\partial p}\frac{\partial p}{\partial t} + \frac{\partial u}{\partial q}\frac{\partial q}{\partial t}$$
+
+where the derivatives from the coordinate transforms would be previously calculated at each point in the mesh.
+
+\subsubsection{Substituting equation}
+
+With the simple computational domain:
+$$\frac{1}{\Delta t} (u_{i, \,j} - u_{i, \,j-1}) + c \frac{1}{\Delta x} (u_{i, \,j} - u_{i-1, \,j}) = 0$$
+
+Then solve for $u_{i, \,j}$:
+$$(\frac{1}{\Delta t} + c\frac{1}{\Delta x})  u_{i, \,j} = \frac{1}{\Delta t}  u_{i, \,j-1} + c \frac{1}{\Delta x}  u_{i-1, \,j}$$
+$$u_{i, \,j} = \frac{1}{\frac{1}{\Delta t} + c\frac{1}{\Delta x}} \left(\frac{1}{\Delta t} u_{i, \,j-1} + c \frac{1}{\Delta x} u_{i-1, \,j}\right)$$
+
+
+With the complex domain:
+$$ \diff{u}{p}\diff{p}{t}  +  \diff{u}{q}\diff{q}{t}  + c\diff{u}{p}\diff{p}{x}  +  c\diff{u}{q}\diff{q}{x} = 0  $$
+$$ \diff{u}{p}\left(\diff{p}{t} + c\diff{p}{x}\right) + \diff{u}{q}\left(\diff{q}{t}  + c \diff{q}{x}\right) = 0  $$
+$$ \left(\diff{p}{t} + c\diff{p}{x}\right) (u_{i, \,j} - u_{i-1, \,j}) + \left(\diff{q}{t}  + c \diff{q}{x}\right) (u_{i, \,j} - u_{i, \,j-1}) = 0  $$
+$$ \left(\diff{p}{t} + c\diff{p}{x} + \diff{q}{t}  + c \diff{q}{x}\right) u_{i, j} = \left(\diff{p}{t} + c\diff{p}{x}\right) u_{i-1, \,j} + \left(\diff{q}{t}  + c \diff{q}{x}\right) u_{i, \,j-1} $$
+$$ u_{i, j} = \frac{1}{\diff{p}{t} + c\diff{p}{x} + \diff{q}{t}  + c \diff{q}{x}} \left(\left(\diff{p}{t} + c\diff{p}{x}\right) u_{i-1, \,j} + \left(\diff{q}{t}  + c \diff{q}{x}\right) u_{i, \,j-1}\right) $$
+
+\end{document}
+
