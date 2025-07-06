@@ -1,4 +1,4 @@
-use discreet_common::mesh2d::{FiniteDiffMesh, MeshScaling};
+use discreet_common::mesh2d::FiniteDiffMesh;
 use discreet_macros::finite_diff_2d;
 
 mod example;

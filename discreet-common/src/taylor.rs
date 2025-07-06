@@ -1,14 +1,16 @@
-use crate::finite_diff2d::{Dimension2D, FiniteDiffOperator};
+use std::collections::{BTreeMap, HashMap};
+
+use crate::algebra::{MeshExpr, Variable};
 
 pub struct TaylorTable {
     cols: Vec<Vec<f64>>,
 }
 
 impl TaylorTable {
-    pub fn new(stencil: &[(isize, isize)], dimension: Dimension2D) -> Self {
-        let filter_fn: fn(&(isize, isize)) -> bool = match dimension {
-            Dimension2D::First => |(_, y)| *y == 0,
-            Dimension2D::Second => |(x, _)| *x == 0,
+    pub fn new(stencil: &[(isize, isize)], variable: Variable) -> Self {
+        let filter_fn: fn(&(isize, isize)) -> bool = match variable {
+            Variable::X => |(_, y)| *y == 0,
+            Variable::Y => |(x, _)| *x == 0,
         };
 
         let stencil: Vec<(isize, isize)> = stencil.iter().copied().filter(filter_fn).collect();
@@ -20,11 +22,12 @@ impl TaylorTable {
             row.resize_with(size, || 0.0);
             row
         });
-
         Self { cols }
     }
 
-    pub fn get_scheme(derivative_order: (usize, usize)) -> FiniteDiffOperator {
+    pub fn get_scheme(derivative_order: usize) -> MeshExpr {
         todo!()
     }
 }
+
+pub type DerivativeApproximations = HashMap<(Variable, usize), MeshExpr>;

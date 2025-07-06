@@ -1,4 +1,8 @@
-#[derive(Clone, Copy, Debug, PartialEq)]
+use std::collections::HashMap;
+
+use crate::taylor::DerivativeApproximations;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Variable {
     X,
     Y,
@@ -52,6 +56,82 @@ impl Expression {
     }
 }
 
+/// An expression in terms of values on the mesh
+#[derive(Clone, Debug)]
+pub enum MeshExpr {
+    AtOffset(isize, isize),
+    Prod(Vec<MeshExpr>),
+    Sum(Vec<MeshExpr>),
+    Constant(f64),
+    SymbolicConst(usize),
+    FunctionVal(usize),
+    Negate(Box<MeshExpr>),
+    Reciprocal(Box<MeshExpr>),
+}
+
+impl MeshExpr {
+    pub fn from_diff_eq(
+        eq: Expression,
+        consts: &HashMap<String, usize>,
+        fns: &HashMap<String, usize>,
+        derivatives: &DerivativeApproximations,
+    ) -> Result<Self, String> {
+        match eq {
+            Expression::Constant(c) => Ok(Self::Constant(c)),
+            Expression::Sum(terms) => {
+                let mut new_terms = Vec::with_capacity(terms.len());
+
+                for term in terms.into_iter() {
+                    new_terms.push(Self::from_diff_eq(term, consts, fns, derivatives)?)
+                }
+
+                Ok(Self::Sum(new_terms))
+            }
+            Expression::Prod(factors) => {
+                let mut new_factors = Vec::with_capacity(factors.len());
+
+                for term in factors.into_iter() {
+                    new_factors.push(Self::from_diff_eq(term, consts, fns, derivatives)?)
+                }
+
+                Ok(Self::Sum(new_factors))
+            }
+            Expression::FunctionVal(f) => {
+                if let Some(&fn_id) = fns.get(&f) {
+                    Ok(Self::FunctionVal(fn_id))
+                } else {
+                    Err("Unknown function.".into())
+                }
+            }
+            Expression::Derivative(v, o) => match derivatives.get(&(v, o)) {
+                Some(d) => Ok(d.clone()),
+                None => Err("Unknown derivative.".into()),
+            },
+            Expression::CrossDerivative(_) => todo!(),
+            Expression::SolutionVal => Ok(Self::AtOffset(0, 0)),
+            Expression::SymbolicConstant(c) => {
+                if let Some(&c_id) = consts.get(&c) {
+                    Ok(Self::SymbolicConst(c_id))
+                } else {
+                    Err("Unknown constant.".into())
+                }
+            }
+            Expression::Negate(e) => Ok(Self::Negate(Box::new(Self::from_diff_eq(
+                *e,
+                consts,
+                fns,
+                derivatives,
+            )?))),
+            Expression::Reciprocal(e) => Ok(Self::Reciprocal(Box::new(Self::from_diff_eq(
+                *e,
+                consts,
+                fns,
+                derivatives,
+            )?))),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use crate::algebra::Variable;
@@ -85,15 +165,4 @@ mod test {
             Expression::Prod(vec![Expression::Constant(0.54), Expression::Constant(42.0)])
         );
     }
-}
-
-/// An expression in terms of values on the mesh
-pub enum MeshExpr {
-    AtOffset(isize, isize),
-    Prod(Vec<Expression>),
-    Sum(Vec<Expression>),
-    Constant(f64),
-    FunctionVal(usize),
-    Negate(Box<Expression>),
-    Reciprocal(Box<Expression>),
 }
