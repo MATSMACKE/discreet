@@ -1,6 +1,7 @@
+#![allow(unused)]
+
 // ==================
 // CODE THAT SHOULD BE GENERATED
-//
 // finite_diff_2d! {
 //     dimensions: (x, t),
 //     constants: [c],
@@ -102,6 +103,7 @@ struct FunctionValueMesh {
 }
 
 impl FunctionValueMesh {
+    #[allow(clippy::extra_unused_type_parameters)]
     fn new<F: Fn(f64, f64) -> f64>(mesh: &FiniteDiffMesh) -> Self {
         todo!()
     }

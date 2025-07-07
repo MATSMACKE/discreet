@@ -12,7 +12,7 @@ pub struct FiniteDiffMesh {
 
 impl FiniteDiffMesh {
     /// Transforms the physical domain into computational domain to allow
-    pub fn from_physical_domain(points: &[&[PhysicalCoordinate]]) -> Self {
+    pub fn from_physical_domain(_points: &[&[PhysicalCoordinate]]) -> Self {
         todo!()
     }
 
@@ -58,7 +58,7 @@ impl FiniteDiffMesh {
             Boundary::Bottom => {
                 for i in 0..self.width {
                     let index = self.get_index(i, 0);
-                    let PhysicalCoordinate { x, y } = self.points[index];
+                    let PhysicalCoordinate { x, .. } = self.points[index];
                     self.set_at(i, 0, func(x));
                 }
             }
@@ -67,7 +67,7 @@ impl FiniteDiffMesh {
                 let num_rows = self.solution_vals.len() / self.width;
                 for i in 0..self.width {
                     let index = self.get_index(i, num_rows - 1);
-                    let PhysicalCoordinate { x, y } = self.points[index];
+                    let PhysicalCoordinate { x, .. } = self.points[index];
                     self.set_at(i, num_rows - 1, func(x));
                 }
             }
@@ -76,7 +76,7 @@ impl FiniteDiffMesh {
                 let num_rows = self.solution_vals.len() / self.width;
                 for j in 0..num_rows {
                     let index = self.get_index(0, j);
-                    let PhysicalCoordinate { x, y } = self.points[index];
+                    let PhysicalCoordinate { y, .. } = self.points[index];
                     self.set_at(0, j, func(y));
                 }
             }
@@ -85,7 +85,7 @@ impl FiniteDiffMesh {
                 let num_rows = self.solution_vals.len() / self.width;
                 for j in 0..num_rows {
                     let index = self.get_index(num_rows - 1, j);
-                    let PhysicalCoordinate { x, y } = self.points[index];
+                    let PhysicalCoordinate { y, .. } = self.points[index];
                     self.set_at(num_rows - 1, j, func(y));
                 }
             }

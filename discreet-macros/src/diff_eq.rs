@@ -203,7 +203,7 @@ fn parse_path(expr: ExprPath) -> syn::Result<Expression> {
     } else if string == "u" {
         Ok(Expression::SolutionVal)
     } else {
-        Ok(Expression::SymbolicConstant(string))
+        Ok(Expression::SymbolicConstant(id))
     }
 }
 

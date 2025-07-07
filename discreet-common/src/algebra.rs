@@ -1,4 +1,6 @@
-use std::{collections::HashMap, iter::repeat, vec::IntoIter};
+use std::iter::repeat_n;
+
+use syn::Ident;
 
 use crate::taylor::DerivativeApproximations;
 
@@ -25,8 +27,7 @@ pub enum Expression {
     Constant(f64),
     Derivative(Variable, usize),
     SolutionVal,
-    FunctionVal(String),
-    SymbolicConstant(String),
+    SymbolicConstant(Ident),
     CrossDerivative(Vec<Variable>),
     Negate(Box<Expression>),
     Reciprocal(Box<Expression>),
@@ -64,7 +65,6 @@ impl Expression {
             Self::Constant(_) => self,
             Self::Derivative(_, _) => self,
             Self::SolutionVal => self,
-            Self::FunctionVal(_) => self,
             Self::SymbolicConstant(_) => self,
             Self::CrossDerivative(_) => self,
             Self::Negate(e) => Self::Negate(Box::new(func(*e))),
@@ -80,8 +80,8 @@ pub enum MeshExpr {
     Prod(Vec<MeshExpr>),
     Sum(Vec<MeshExpr>),
     Constant(f64),
-    SymbolicConst(usize),
-    FunctionVal(usize),
+    SymbolicConst(Ident),
+    FunctionVal(Ident),
     Negate(Box<MeshExpr>),
     Reciprocal(Box<MeshExpr>),
 }
@@ -89,8 +89,7 @@ pub enum MeshExpr {
 impl MeshExpr {
     pub fn from_diff_eq(
         eq: Expression,
-        consts: &HashMap<String, usize>,
-        fns: &HashMap<String, usize>,
+        fns: &[String],
         derivatives: &DerivativeApproximations,
     ) -> Result<Self, String> {
         match eq {
@@ -99,7 +98,7 @@ impl MeshExpr {
                 let mut new_terms = Vec::with_capacity(terms.len());
 
                 for term in terms.into_iter() {
-                    new_terms.push(Self::from_diff_eq(term, consts, fns, derivatives)?)
+                    new_terms.push(Self::from_diff_eq(term, fns, derivatives)?)
                 }
 
                 Ok(Self::Sum(new_terms))
@@ -108,44 +107,41 @@ impl MeshExpr {
                 let mut new_factors = Vec::with_capacity(factors.len());
 
                 for term in factors.into_iter() {
-                    new_factors.push(Self::from_diff_eq(term, consts, fns, derivatives)?)
+                    new_factors.push(Self::from_diff_eq(term, fns, derivatives)?)
                 }
 
                 Ok(Self::Sum(new_factors))
             }
-            Expression::FunctionVal(f) => {
-                if let Some(&fn_id) = fns.get(&f) {
-                    Ok(Self::FunctionVal(fn_id))
-                } else {
-                    Err("Unknown function.".into())
-                }
-            }
+            Expression::SymbolicConstant(c) => Ok(if fns.contains(&format!("{c}")) {
+                MeshExpr::FunctionVal(c)
+            } else {
+                MeshExpr::SymbolicConst(c)
+            }),
             Expression::Derivative(v, o) => match derivatives.get(&(v, o)) {
                 Some(d) => Ok(d.clone()),
                 None => Err("Unknown derivative.".into()),
             },
             Expression::CrossDerivative(_) => todo!(),
             Expression::SolutionVal => Ok(Self::AtOffset(0, 0)),
-            Expression::SymbolicConstant(c) => {
-                if let Some(&c_id) = consts.get(&c) {
-                    Ok(Self::SymbolicConst(c_id))
-                } else {
-                    Err("Unknown constant.".into())
-                }
-            }
             Expression::Negate(e) => Ok(Self::Negate(Box::new(Self::from_diff_eq(
                 *e,
-                consts,
                 fns,
                 derivatives,
             )?))),
             Expression::Reciprocal(e) => Ok(Self::Reciprocal(Box::new(Self::from_diff_eq(
                 *e,
-                consts,
                 fns,
                 derivatives,
             )?))),
         }
+    }
+
+    pub fn expand(self) -> Self {
+        todo!()
+    }
+
+    pub fn rearrange_for(self, target: &MeshExpr) -> Result<Self, String> {
+        todo!()
     }
 }
 
@@ -166,7 +162,7 @@ impl SquareMat {
     }
 
     pub fn ident(size: usize) -> Self {
-        let mut vals: Vec<f64> = repeat(0.).take(size * size).collect();
+        let mut vals: Vec<f64> = repeat_n(0., size * size).collect();
 
         for i in 0..size {
             let idx = Self::get_index(size, i, i);
@@ -251,7 +247,7 @@ mod test {
         }
 
         let sub_fn = |e: &Expression| match e {
-            Expression::Derivative(func, variables) => Some(get_fd_expr()),
+            Expression::Derivative(_, _) => Some(get_fd_expr()),
             _ => None,
         };
 

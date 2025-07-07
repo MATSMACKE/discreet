@@ -29,6 +29,7 @@ name = "discreet-macros"
 version = "0.1.0"
 dependencies = [
  "discreet-common 0.1.0",
+ "proc-macro2",
  "quote",
  "syn",
 ]

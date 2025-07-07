@@ -48,14 +48,13 @@ impl TaylorTable {
         }
     }
 
-    pub fn get_scheme(&self, derivative_order: usize) -> MeshExpr {
-        let col = &self.cols[derivative_order];
+    pub fn get_scheme(&self, derivative_order: usize) -> Option<MeshExpr> {
+        let col = self.cols.get(derivative_order)?;
         let size = self.cols.len();
 
         let mut terms = Vec::with_capacity(size);
 
-        for i in 0..size {
-            let coeff = col[i];
+        for (i, &coeff) in col.iter().enumerate() {
             if coeff == 0. {
                 continue;
             }
@@ -73,7 +72,7 @@ impl TaylorTable {
             ]));
         }
 
-        MeshExpr::Sum(terms)
+        Some(MeshExpr::Sum(terms))
     }
 }
 
@@ -119,7 +118,7 @@ mod test {
         let scheme = table.get_scheme(1);
 
         assert_eq!(
-            scheme,
+            scheme.unwrap(),
             MeshExpr::Sum(vec![
                 MeshExpr::Prod(vec![MeshExpr::Constant(-1.0), MeshExpr::AtOffset(0, 0)]),
                 MeshExpr::Prod(vec![MeshExpr::Constant(1.0), MeshExpr::AtOffset(1, 0)])
