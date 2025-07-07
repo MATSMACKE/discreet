@@ -31,7 +31,27 @@ Use stencil with values: $u_{i-1, \,j}$ and $u_{i, \,j-1}$ with Taylor series ex
 
 \subsubsection{Approximations}
 
-Method will be used on the computational domain, with coordinates (p, q), where nodes are spaced by 1 in each direction.
+\begin{table}[htp]
+    \centering
+    \begin{tabular}{c|c|c|c}
+        Term & $u_{i-1,\,j}$ & $u_{i,\,j}$ & Desired \\
+        \hline
+        $u$ & 1 & 1 & 0 \\
+        $\Delta x u_x$ & -1 & 0 & 1 \\
+    \end{tabular}
+\end{table}
+
+$$ \left[\begin{matrix}
+    1 & 1 \\ -1 & 0
+\end{matrix}\right]\left[\begin{matrix}
+    a \\ b
+\end{matrix}\right] = \left[\begin{matrix}
+    0 \\ 1
+\end{matrix}\right] $$
+
+Solving this, we get $a = -1$, $b = 1$.
+
+Method will be used on the computational domain, with coordinates (p, q), where nodes are spaced by 1 in each direction, so $\Delta x = 1$.
 $$\frac{\partial u}{\partial p} = u_{i, \,j} - u_{i-1, \,j}$$
 $$\frac{\partial u}{\partial q} = u_{i, \,j} - u_{i, \,j-1}$$
 
