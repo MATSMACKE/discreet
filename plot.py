@@ -1,11 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-vals = np.fromfile("testing/MyMesh", dtype='>f8')
-vals = np.reshape(vals, (1000, 1000))
+xvals = 100
+yvals = 100
 
-x = np.linspace(0, 6, 1000)
-t = np.linspace(0, 3, 1000)
+vals = np.fromfile("testing/MyMesh", dtype='>f8')
+vals = np.reshape(vals, (xvals, yvals))
+
+x = np.linspace(0, 6, xvals)
+t = np.linspace(0, 3, yvals)
 
 X, T = np.meshgrid(x, t)
 

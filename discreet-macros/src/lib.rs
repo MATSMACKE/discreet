@@ -119,38 +119,100 @@ pub fn finite_diff_2d(args: TokenStream) -> TokenStream {
         }
     };
 
-    let rhs_expr = discretised_de.rearrange_for(&MeshExpr::AtOffset(0, 0));
+    let error_expr = discretised_de.render();
 
-    // ===========
-    // THIS IS JUST A PLACEHOLDER UNTIL PROPERLY IMPLEMENTED
-    let mut vars = quote!(pub nu: f64,);
-    vars = quote!(#vars pub bla: f64,);
+    let rhs_expr = discretised_de.find_root_linear(&MeshExpr::AtOffset(0, 0));
 
-    // for one function
-    let values_type = quote!((f64));
-    let functions = quote!(sinxcosy: F);
+    todo!("Insert mesh scaling factors");
 
-    // ==========
+    let rhs_expr = rhs_expr.render();
+
+    let mut consts = quote!();
+    for c in constants {
+        consts = quote!(#consts pub c: f64,);
+    }
+
+    // PLACEHOLDER
+    let functions = quote!();
 
     quote!(
         struct FiniteDiff {
-            consts: Constants
+            consts: Constants,
+            fns: FunctionValueMesh,
+            mesh: FiniteDiffMesh
         }
 
         impl FiniteDiff {
             fn new(consts: Constants, mesh: FiniteDiffMesh, fns: FunctionValueMesh) -> Self {
                 Self {
-                    consts
+                    consts,
+                    mesh,
+                    fns
                 }
+            }
+
+            fn run_iteration(&mut self) {
+                let indices = self.mesh.index_iter().filter(|(i, j)| *i > 0 && *j > 0);
+
+                match self.mesh.get_scaling() {
+                    MeshScaling::SimpleGrid(dx, dy) => {
+                        for (i, j) in indices {
+                            self.iterate_point_simple_domain(i, j);
+                        }
+                    }
+                    MeshScaling::ComplexPhysDomain(factors) => {
+                        todo!()
+                    }
+                }
+            }
+
+            fn get_error_stats(&self) -> (f64, f64) {
+                let mut prev_elements = 0.;
+                let mut mean = 0.;
+                let mut max = 0.;
+
+                let indices = self.mesh.index_iter().filter(|(i, j)| *i > 0 && *j > 0);
+
+                match self.mesh.get_scaling() {
+                    MeshScaling::SimpleGrid(dx, dy) => {
+
+                        for (i, j) in indices {
+                            let error = (#error_expr).abs();
+
+                            let total = mean * prev_elements + error;
+                            prev_elements += 1.;
+                            mean = total / prev_elements;
+
+                            if error > max {
+                                max = error;
+                            }
+                        }
+                    }
+                    MeshScaling::ComplexPhysDomain(factors) => {
+                        todo!()
+                    }
+                }
+
+                (mean, max)
+            }
+
+            fn iterate_point_simple_domain(
+                &mut self,
+                i: usize,
+                j: usize,
+            ) {
+                let v = #rhs_expr;
+
+                self.mesh.set_at(i, j, v);
             }
         }
 
         struct Constants {
-            #vars
+            #consts
         }
 
         struct FunctionValueMesh {
-            values: Vec<#values_type>
+            values: Vec<f64>
         }
 
         impl FunctionValueMesh {

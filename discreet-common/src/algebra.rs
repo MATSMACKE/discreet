@@ -1,5 +1,7 @@
 use std::iter::repeat_n;
 
+use proc_macro2::TokenStream;
+use quote::quote;
 use syn::Ident;
 
 use crate::taylor::DerivativeApproximations;
@@ -136,12 +138,162 @@ impl MeshExpr {
         }
     }
 
-    pub fn expand(self) -> Self {
-        todo!()
+    pub fn differentiate(&self, variable: &MeshExpr) -> Self {
+        if self == variable {
+            Self::Constant(1.)
+        } else {
+            match self {
+                Self::Sum(items) => {
+                    Self::Sum(items.iter().map(|i| i.differentiate(variable)).collect())
+                }
+                Self::Prod(items) => {
+                    let mut iter = items.iter();
+                    let lhs = iter.next().unwrap().clone();
+                    let rhs = Self::Prod(iter.cloned().collect()).simplify();
+
+                    lhs.product_rule(&rhs, variable)
+                }
+                _ => Self::Constant(0.),
+            }
+        }
     }
 
-    pub fn rearrange_for(self, target: &MeshExpr) -> Result<Self, String> {
-        todo!()
+    fn product_rule(&self, rhs: &Self, variable: &Self) -> Self {
+        Self::Sum(vec![
+            Self::Prod(vec![self.clone(), rhs.differentiate(variable)]),
+            Self::Prod(vec![self.differentiate(variable), rhs.clone()]),
+        ])
+    }
+
+    pub fn find_root_linear(self, variable: &MeshExpr) -> Self {
+        let derivative = self
+            .differentiate(variable)
+            .substitute(variable, &Self::Constant(0.));
+        let numerator = self.substitute(variable, &Self::Constant(0.));
+        MeshExpr::Negate(Box::new(MeshExpr::Prod(vec![
+            numerator,
+            MeshExpr::Reciprocal(Box::new(derivative)),
+        ])))
+        .simplify()
+    }
+
+    pub fn substitute(self, target: &MeshExpr, replacement: &MeshExpr) -> Self {
+        if &self == target {
+            return replacement.clone();
+        }
+        match self {
+            Self::Negate(e) => Self::Negate(Box::new(e.substitute(target, replacement))),
+            Self::Reciprocal(e) => Self::Reciprocal(Box::new(e.substitute(target, replacement))),
+            Self::Sum(items) => Self::Sum(
+                items
+                    .into_iter()
+                    .map(|i| i.substitute(target, replacement))
+                    .collect(),
+            ),
+            Self::Prod(items) => Self::Prod(
+                items
+                    .into_iter()
+                    .map(|i| i.substitute(target, replacement))
+                    .collect(),
+            ),
+            other => other,
+        }
+    }
+
+    pub fn simplify(self) -> Self {
+        match self {
+            Self::Sum(items) => {
+                let mut items: Vec<_> = items
+                    .into_iter()
+                    .map(|e| e.simplify())
+                    .filter(|e| e != &Self::Constant(0.))
+                    .collect();
+
+                let mut new_items = Vec::new();
+
+                for item in items {
+                    match item {
+                        Self::Sum(mut inner) => new_items.append(&mut inner),
+                        other => new_items.push(other),
+                    }
+                }
+
+                items = new_items;
+
+                if items.len() == 1 {
+                    items.into_iter().next().unwrap()
+                } else {
+                    Self::Sum(items)
+                }
+            }
+            Self::Prod(items) => {
+                let items: Vec<_> = items
+                    .into_iter()
+                    .map(|e| e.simplify())
+                    .filter(|e| e != &Self::Constant(1.))
+                    .collect();
+
+                if items.len() == 1 {
+                    items.into_iter().next().unwrap()
+                } else if items.is_empty() {
+                    Self::Constant(1.)
+                } else if items.contains(&Self::Constant(0.)) {
+                    Self::Constant(0.)
+                } else {
+                    Self::Prod(items)
+                }
+            }
+            Self::Negate(n) if *n == Self::Constant(0.) => Self::Constant(0.),
+            Self::Reciprocal(n) if *n == Self::Constant(1.) => Self::Constant(1.),
+            Self::Negate(e) => Self::Negate(Box::new(e.simplify())),
+            Self::Reciprocal(e) => Self::Reciprocal(Box::new(e.simplify())),
+            other => other,
+        }
+    }
+
+    pub fn render(&self) -> TokenStream {
+        match self {
+            &Self::AtOffset(i, j) => {
+                quote! {self.mesh.get_at((i as isize + (#i)) as usize, (j as isize + (#j)) as usize)}
+            }
+            &Self::Constant(c) => quote! {#c},
+            Self::FunctionVal(_f) => todo!(),
+            Self::Negate(expr) => {
+                let expr = expr.render();
+                quote! {(-#expr)}
+            }
+            Self::Reciprocal(expr) => {
+                let expr = expr.render();
+                quote! {(1. / #expr)}
+            }
+            Self::SymbolicConst(c) => quote! {self.consts.#c},
+            Self::Sum(items) => {
+                let mut iter = items.iter();
+
+                let first = iter.next().unwrap().render();
+                let mut stream = quote! {#first};
+
+                for item in iter {
+                    let rendered = item.render();
+                    stream = quote! {#stream + #rendered}
+                }
+
+                quote! {(#stream)}
+            }
+            Self::Prod(items) => {
+                let mut iter = items.iter();
+
+                let first = iter.next().unwrap().render();
+                let mut stream = quote! {#first};
+
+                for item in iter {
+                    let rendered = item.render();
+                    stream = quote! {#stream * #rendered}
+                }
+
+                quote! {(#stream)}
+            }
+        }
     }
 }
 
@@ -238,7 +390,7 @@ impl SquareMat {
 mod test {
     use crate::algebra::Variable;
 
-    use super::{Expression, SquareMat};
+    use super::{Expression, MeshExpr, SquareMat};
 
     #[test]
     fn substituting_derivatives() {
@@ -300,5 +452,15 @@ mod test {
             mat.get_cols(),
             vec![vec![1., -0.5, 1.], vec![1., 0., 1.], vec![0.5, 1.5, 1.],]
         )
+    }
+
+    #[test]
+    fn product_rule() {
+        let expr = MeshExpr::Prod(vec![MeshExpr::AtOffset(0, 0), MeshExpr::AtOffset(0, 0)]);
+
+        assert_eq!(
+            expr.differentiate(&MeshExpr::AtOffset(0, 0)).simplify(),
+            MeshExpr::Sum(vec![MeshExpr::AtOffset(0, 0), MeshExpr::AtOffset(0, 0),]),
+        );
     }
 }
